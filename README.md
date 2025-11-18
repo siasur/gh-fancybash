@@ -8,7 +8,7 @@ FancyBash is a more feature-rich and visually appealing alternative to the defau
 
 ## Features
 
-- **Custom `.bashrc` Support:** FancyBash reads a `.bashrc` file located in the user's home directory. This file allows you to define a `PATH` variable, enabling greater control over your environment.
+- **Custom `.bashrc` Support:** FancyBash reads a `.bashrc` file located in the user's home directory. This file allows you to define a `PATH` variable, enabling you to specify where to search for executables.
 
 - **Enhanced Prompt:** FancyBash includes a fancier prompt. While currently static, future updates aim to make the prompt more informative and fully customizable.
 
