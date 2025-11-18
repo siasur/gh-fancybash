@@ -41,11 +41,18 @@ Config.readFromFile = function(filePath)
 
 end function
 
-
-Config.get = function(key, defaultValue = null) // Get configuration value by key
+// Gets a configuration value by key or returns a default value if the key does not exist.
+// @param {string} key - The configuration key.
+// @param {string} [defaultValue=null] - The default value to return if the key is not found.
+// @returns {string|null} - The configuration value or the default value.
+Config.get = function(key, defaultValue = null, putWhenMissing = false) // Get configuration value by key
     if Config._rawData.hasIndex(key) then
         return Config._rawData[key]
     else
+        if putWhenMissing then
+            Config._rawData[key] = defaultValue
+        end if
+
         return defaultValue
     end if
 end function
@@ -54,8 +61,22 @@ Config.set = function(key, value) // Set configuration value by key
     Config._rawData[key] = value
 end function
 
-Config.saveToFile = function(filePath) // Save configuration to a file
+// Saves the current configuration to a file.
+// @param {string} filePath - The path to the configuration file.
+// @param {boolean} [createIfMissing=false] - Whether to create the file if it does not exist.
+// @returns {null|string} - Returns null on success, or an error message on failure.
+Config.saveToFile = function(filePath, createIfMissing = false) // Save configuration to a file
     fileObj = get_shell.host_computer.File(get_abs_path(filePath))
+
+    if not fileObj and createIfMissing then
+        creationResult = Config.createFile(filePath)
+
+        if typeof(creationResult) == "string" then
+            return creationResult // Return error message if creation failed
+        end if
+
+        fileObj = get_shell.host_computer.File(get_abs_path(filePath))
+    end if
 
     if fileObj == null then
         return "Config file not found: " + filePath
@@ -70,10 +91,34 @@ Config.saveToFile = function(filePath) // Save configuration to a file
     end if
 
     contentLines = []
-    for key in Config._rawData
-        contentLines.append(key + "=" + Config._rawData[key])
+    for keyValue in Config._rawData
+        contentLines.push(keyValue.key + "=" + keyValue.value)
     end for
 
     fileObj.set_content(contentLines.join(char(10))) // Join lines with newline
 end function
 
+// Creates an empty configuration file at the specified path.
+// @param {string} filePath - The path where the configuration file should be created.
+// @returns {number|string} - Returns 1 on success, or an error message on failure.
+Config.createFile = function(filePath)
+    fullPath = get_abs_path(filePath)
+    folderPath = parent_path(fullPath)
+    fileName = fullPath.split("/")[-1]
+    folderObj = get_shell.host_computer.File(folderPath)
+
+    if folderObj == null then
+        return "Parent directory does not exist: " + folderPath
+    end if
+
+    if folderObj.is_folder == false then
+        return "Parent path is not a directory: " + folderPath
+    end if
+
+    if folderObj.has_permission("w") == false then
+        return "No write permission in directory: " + folderPath
+    end if
+
+    return get_shell.host_computer.touch(folderPath, fileName)
+
+end function

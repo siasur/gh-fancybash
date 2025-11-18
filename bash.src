@@ -3,17 +3,19 @@ import_code("./path.src")
 import_code("./prompt.src")
 
 Bash = function()    
-	output = user_input(Prompt + "<nobr>  </nobr>", false, false, true)
+	output = user_input(Prompt, false, false, true)
 	if(output.len == 0) then return
 	
 	listCmd = output.trim.split(" ")
 	command = listCmd.pull()
 	shellArgs = listCmd.join(" ")
-	
+
+	// Handle built-in commands
 	if ["quit", "exit", "q", "close"].indexOf(command) != null then exit
 	if command == "clear" then 
 	    clear_screen
 	else
+		// Execute external command
 	    cmdPath = PathTools.Resolve(command)
 	    output = get_shell.launch(cmdPath, shellArgs)
 	    if output and output != 1 then print(output)

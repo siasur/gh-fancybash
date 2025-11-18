@@ -15,8 +15,8 @@ Prompt = function()
     end if
 
     line = "" //"<mspace=-0.4em><voffset=-0.1em><size=0.94ex><sprite=2 color=#ffffff00></size></voffset></mspace>"
-    line = line + "<nobr><mark=#9f9f9f>.<font=LiberationSans SDF><color=black>" + currentDateTime + "</color></font>.</mark><mspace=-0.4em><voffset=-0.1em><size=0.94ex><sprite=2 color=#9f9f9f></size></voffset></mspace></nobr>"
-    line = line + "<nobr><mark=#5C5C5C>..<font=LiberationSans SDF><color=white>" + active_user + "@" + deviceName + "</color></font>.</mark><mspace=-0.4em><voffset=-0.1em><size=0.94ex><sprite=2 color=#5C5C5C></size></voffset></mspace></nobr>"
+    line = line + "<nobr><mark=#A5A5A5>.<font=LiberationSans SDF><color=black>" + currentDateTime + "</color></font>.</mark><mspace=-0.4em><voffset=-0.1em><size=0.94ex><sprite=2 color=#A5A5A5></size></voffset></mspace></nobr>"
+    line = line + "<nobr><mark=#4D4D4D>..<font=LiberationSans SDF><color=white>" + active_user + "@" + deviceName + "</color></font>.</mark><mspace=-0.4em><voffset=-0.1em><size=0.94ex><sprite=2 color=#4D4D4D></size></voffset></mspace></nobr>"
     line = line + "<nobr><mark=#202020>..<font=LiberationSans SDF><color=white>" + currentPath + userIndicator + "</color></font>.</mark><mspace=-0.4em><voffset=-0.1em><size=0.94ex><sprite=2 color=#202020></size></voffset></mspace></nobr>"
-    return line
+    return line + "  "
 end function
