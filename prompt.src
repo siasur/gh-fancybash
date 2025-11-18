@@ -1,0 +1,22 @@
+import_code("./config.src")
+import_code("./path.src")
+
+Prompt = function()
+    isRoot = active_user == "root"
+    currentDateTime = current_date
+    currentPath = current_path
+    if not isRoot then
+        currentPath = PathTools.Beautify(currentPath)
+    end if
+    deviceName = get_shell.host_computer.get_name
+    userIndicator = "$"
+    if isRoot then
+        userIndicator = "#"
+    end if
+
+    line = "" //"<mspace=-0.4em><voffset=-0.1em><size=0.94ex><sprite=2 color=#ffffff00></size></voffset></mspace>"
+    line = line + "<nobr><mark=#9f9f9f>.<font=LiberationSans SDF><color=black>" + currentDateTime + "</color></font>.</mark><mspace=-0.4em><voffset=-0.1em><size=0.94ex><sprite=2 color=#9f9f9f></size></voffset></mspace></nobr>"
+    line = line + "<nobr><mark=#606060>..<font=LiberationSans SDF><color=black>" + active_user + "@" + deviceName + "</color></font>.</mark><mspace=-0.4em><voffset=-0.1em><size=0.94ex><sprite=2 color=#606060></size></voffset></mspace></nobr>"
+    line = line + "<nobr><mark=#202020>..<font=LiberationSans SDF><color=white>" + currentPath + userIndicator + "</color></font>.</mark><mspace=-0.4em><voffset=-0.1em><size=0.94ex><sprite=2 color=#202020></size></voffset></mspace></nobr>"
+    return line
+end function

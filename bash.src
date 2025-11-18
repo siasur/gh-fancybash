@@ -1,0 +1,25 @@
+import_code("./config.src")
+import_code("./path.src")
+import_code("./prompt.src")
+
+Bash = function()    
+	output = user_input(Prompt + " ", false, false, true)
+	if(output.len == 0) then return
+	
+	listCmd = output.trim.split(" ")
+	command = listCmd[0]
+	shellArgs = ""
+	if(listCmd.len > 1) then
+		listCmd.remove(0)
+		shellArgs = listCmd.join
+	end if
+	
+	if(command == "exit") then exit
+	if(command == "clear") then 
+	    clear_screen
+	else
+	    cmdPath = PathTools.Resolve(command)
+	    output = get_shell.launch(cmdPath, shellArgs)
+	    if output and output != 1 then print(output)
+	end if
+end function

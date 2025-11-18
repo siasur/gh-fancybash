@@ -1,0 +1,11 @@
+import_code("./config.src")
+import_code("./path.src")
+import_code("./bash.src")
+
+Config.readFromFile(home_dir + "/.bashrc")
+
+PathTools.SetSearchPaths(Config.get("PATH", "./;~/bin;/bin;/usr/bin"))
+
+while true
+    Bash()
+end while

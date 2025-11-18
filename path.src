@@ -1,0 +1,53 @@
+PathTools = {}
+PathTools.searchPaths = []
+PathTools.fallbackPaths = [".", "/bin", "/usr/bin"]
+
+PathTools.SetSearchPaths = function(paths)
+    PathTools.searchPaths = [] // clear existing paths
+    pathsParts = paths.split(";")
+    for p in pathsParts
+        trimmedPath = p.trim()
+        if trimmedPath.len > 0 then
+            valid = false
+            
+            if trimmedPath.indexOf(".") == 0 and p.len == 1 then valid = true // current directory
+			if trimmedPath.indexOf("./") == 0 then valid = true // Relative to current directory
+			if trimmedPath.indexOf("~") == 0 then valid = true // Relative to home directory
+			if trimmedPath.indexOf("/") == 0 then valid = true // Absolute path
+            
+            if valid then
+                PathTools.searchPaths.push(trimmedPath)
+            end if
+
+        end if
+    end for
+
+    if PathTools.searchPaths.len == 0 then // Fallback to prevent breakage
+        PathTools.searchPaths = PathTools.fallbackPaths
+    end if
+
+end function
+
+PathTools.Resolve = function(fileName)
+    for path in PathTools.searchPaths
+        testPath = path
+        if testPath.indexOf("~") == 0 then testPath = home_dir + testPath[1:]
+        if testPath.indexOf("./") == 0 then testPath = current_path + testPath[1:]
+        if testPath == "." then testPath = current_path
+
+        absPath = get_abs_path(fileName, testPath)
+        fileObj = get_shell.host_computer.File(absPath)
+        if fileObj != null then return absPath
+    end for
+
+    return fileName // Return original if not found
+end function
+
+PathTools.Beautify = function(filePath)
+    absPath = get_abs_path(filePath)
+    if absPath.indexOf(home_dir) == 0 then
+        return "~" + absPath.replace(home_dir, "")
+    else
+        return absPath
+    end if
+end function

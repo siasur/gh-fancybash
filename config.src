@@ -1,0 +1,79 @@
+// @type Config
+Config = {}
+Config._rawData = {}
+
+// Reads configuration from a file
+// @param {string} filePath - The path to the configuration file.
+// @returns {null|string} - Returns null on success, or an error message on failure.
+Config.readFromFile = function(filePath)
+    fileObj = get_shell.host_computer.File(get_abs_path(filePath))
+
+    if fileObj == null then
+        return "Config file not found: " + filePath
+    end if
+
+    if fileObj.is_folder then
+        return "Config path is a directory, not a file: " + filePath
+    end if
+
+    if fileObj.has_permission("r") == false then
+        return "No read permission for config file: " + filePath
+    end if
+
+    Config._rawData = {} // Clear existing data
+    content = fileObj.get_content().split(char(10)) // Split by newline
+
+    for line in content
+        line = line.trim()
+        if line.len == 0 or line.indexOf("#") == 0 then
+            continue // Skip empty lines and comments
+        end if
+
+        keyValue = line.split("=")
+        if keyValue.len != 2 then
+            continue // Skip malformed lines
+        end if
+
+        key = keyValue[0].trim()
+        value = keyValue[1].trim()
+        Config._rawData[key] = value
+    end for
+
+end function
+
+
+Config.get = function(key, defaultValue = null) // Get configuration value by key
+    if Config._rawData.hasIndex(key) then
+        return Config._rawData[key]
+    else
+        return defaultValue
+    end if
+end function
+
+Config.set = function(key, value) // Set configuration value by key
+    Config._rawData[key] = value
+end function
+
+Config.saveToFile = function(filePath) // Save configuration to a file
+    fileObj = get_shell.host_computer.File(get_abs_path(filePath))
+
+    if fileObj == null then
+        return "Config file not found: " + filePath
+    end if
+
+    if fileObj.is_folder then
+        return "Config path is a directory, not a file: " + filePath
+    end if
+
+    if fileObj.has_permission("w") == false then
+        return "No write permission for config file: " + filePath
+    end if
+
+    contentLines = []
+    for key in Config._rawData
+        contentLines.append(key + "=" + Config._rawData[key])
+    end for
+
+    fileObj.set_content(contentLines.join(char(10))) // Join lines with newline
+end function
+
