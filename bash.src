@@ -1,8 +1,9 @@
 import_code("./config.src")
 import_code("./path.src")
 import_code("./prompt.src")
+import_code("./builtins.src")
 
-Bash = function()    
+Bash = function()
 	output = user_input(Prompt, false, false, true)
 	if(output.len == 0) then return
 	
@@ -10,10 +11,12 @@ Bash = function()
 	command = listCmd.pull()
 	shellArgs = listCmd.join(" ")
 
-	// Handle built-in commands
+	// Explicitly handle exit commands
 	if ["quit", "exit", "q", "close"].indexOf(command) != null then exit
-	if command == "clear" then 
-	    clear_screen
+
+	// Handle built-in commands
+	if BuiltIns.hasIndex(command) then
+	    BuiltIns[command](shellArgs)
 	else
 		// Execute external command
 	    cmdPath = PathTools.Resolve(command)

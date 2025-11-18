@@ -1,0 +1,130 @@
+// @type KeyValueStorage
+KeyValueStorage = {}
+//KeyValueStorage._rawData = {}
+
+KeyValueStorage.Create = function()
+    kvStorage = new self
+    kvStorage._rawData = {}
+    return kvStorage
+end function
+
+// Reads key/value pairs from a file
+// @param {string} filePath - The path to the key/value file.
+// @returns {null|string} - Returns null on success, or an error message on failure.
+KeyValueStorage.readFromFile = function(filePath)
+    fileObj = get_shell.host_computer.File(get_abs_path(filePath))
+
+    if fileObj == null then
+        return "File not found: " + filePath
+    end if
+
+    if fileObj.is_folder then
+        return "Path is a directory, not a file: " + filePath
+    end if
+
+    if fileObj.has_permission("r") == false then
+        return "No read permission for file: " + filePath
+    end if
+
+    self._rawData = {} // Clear existing data
+    content = fileObj.get_content().split(char(10)) // Split by newline
+
+    for line in content
+        line = line.trim()
+        if line.len == 0 or line.indexOf("#") == 0 then
+            continue // Skip empty lines and comments
+        end if
+
+        keyValue = line.split("=")
+        if keyValue.len != 2 then
+            continue // Skip malformed lines
+        end if
+
+        key = keyValue[0].trim()
+        value = keyValue[1].trim()
+        self._rawData[key] = value
+    end for
+
+end function
+
+// Gets a value by key or returns a default value if the key does not exist.
+// @param {string} key - The key to look up.
+// @param {string} [defaultValue=null] - The default value to return if the key is not found.
+// @returns {string|null} - The stored value or the default value.
+KeyValueStorage.get = function(key, defaultValue = null, putWhenMissing = false) // Get value by key
+    if self._rawData.hasIndex(key) then
+        return self._rawData[key]
+    else
+        if putWhenMissing then
+            self._rawData[key] = defaultValue
+        end if
+
+        return defaultValue
+    end if
+end function
+
+KeyValueStorage.set = function(key, value) // Set value by key
+    self._rawData[key] = value
+end function
+
+// Saves the current key/value data to a file.
+// @param {string} filePath - The path to the key/value file.
+// @param {boolean} [createIfMissing=false] - Whether to create the file if it does not exist.
+// @returns {null|string} - Returns null on success, or an error message on failure.
+KeyValueStorage.saveToFile = function(filePath, createIfMissing = false) // Save key/value data to a file
+    fileObj = get_shell.host_computer.File(get_abs_path(filePath))
+
+    if not fileObj and createIfMissing then
+        creationResult = KeyValueStorage.createFile(filePath)
+
+        if typeof(creationResult) == "string" then
+            return creationResult // Return error message if creation failed
+        end if
+
+        fileObj = get_shell.host_computer.File(get_abs_path(filePath))
+    end if
+
+    if fileObj == null then
+        return "File not found: " + filePath
+    end if
+
+    if fileObj.is_folder then
+        return "Path is a directory, not a file: " + filePath
+    end if
+
+    if fileObj.has_permission("w") == false then
+        return "No write permission for file: " + filePath
+    end if
+
+    contentLines = []
+    for keyValue in self._rawData
+        contentLines.push(keyValue.key + "=" + keyValue.value)
+    end for
+
+    fileObj.set_content(contentLines.join(char(10))) // Join lines with newline
+end function
+
+// Creates an empty key/value file at the specified path.
+// @param {string} filePath - The path where the key/value file should be created.
+// @returns {number|string} - Returns 1 on success, or an error message on failure.
+KeyValueStorage.createFile = function(filePath)
+    fullPath = get_abs_path(filePath)
+    folderPath = parent_path(fullPath)
+    fileName = fullPath.split("/")[-1]
+    folderObj = get_shell.host_computer.File(folderPath)
+
+    if folderObj == null then
+        return "Parent directory does not exist: " + folderPath
+    end if
+
+    if folderObj.is_folder == false then
+        return "Parent path is not a directory: " + folderPath
+    end if
+
+    if folderObj.has_permission("w") == false then
+        return "No write permission in directory: " + folderPath
+    end if
+
+    return get_shell.host_computer.touch(folderPath, fileName)
+
+end function

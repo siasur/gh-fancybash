@@ -1,0 +1,71 @@
+import_code("./path.src")
+
+BuiltIns = {}
+
+// Clears the terminal screen
+BuiltIns.clear = function(argString = "")
+    clear_screen()
+end function
+
+// Shows the current working directory absolute and without beautification
+BuiltIns.pwd = function(argString = "")
+    print(current_path)
+end function
+
+// Echoes the provided arguments back to the terminal
+BuiltIns.echo = function(argString = "")
+    print(argString)
+end function
+
+// Displays whether a command is built-in or external
+BuiltIns.type = function(argString = "")
+    cmd = argString.trim().split(" ")[0]
+    if BuiltIns.hasIndex(cmd) then
+        print(cmd + " is a built-in command.")
+    else
+        cmdPath = PathTools.Resolve(cmd)
+        fileObj = get_shell.host_computer.File(cmdPath)
+        if fileObj != null and not fileObj.is_folder then
+            print(cmd + " is an external command.")
+        else
+            print(cmd + " not found.")
+        end if
+    end if
+end function
+
+// Displays the path of an external command
+BuiltIns.which = function(argString = "")
+
+    if argString.len == 0 then
+        print("Usage: which <command>")
+        return
+    end if
+    
+        cmd = argString.trim().split(" ")[0]
+
+    if BuiltIns.hasIndex(cmd) then
+        print(cmd + " is a built-in command.")
+        return
+    end if
+
+    cmdPath = PathTools.Resolve(cmd)
+    fileObj = get_shell.host_computer.File(cmdPath)
+    if fileObj != null and not fileObj.is_folder then
+        print(cmdPath)
+    else
+        print(cmd + " not found.")
+    end if
+end function
+
+// Lists all built-in commands
+BuiltIns.help = function(argString = "")
+    print("Built-in commands:")
+    for cmd in BuiltIns.indexes
+        print(" - " + cmd)
+    end for
+end function
+
+// More ideas:
+// Already rejected: exit, cd, ls, history, set, unset, whoami, date
+    // - export (set environment variable)
+    // - alias (create command aliases)
