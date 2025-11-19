@@ -1,3 +1,4 @@
+import_code("./utils.src")
 import_code("./config.src")
 import_code("./path.src")
 import_code("./prompt.src")
@@ -9,10 +10,13 @@ Bash = function()
 	
 	listCmd = output.trim.split(" ")
 	command = listCmd.pull()
+
+	Config.ExpandVariables(listCmd)
+
 	shellArgs = listCmd.join(" ")
 
 	// Explicitly handle exit commands
-	if ["quit", "exit", "q", "close"].indexOf(command) != null then exit
+	if ["quit", "exit", "q", "close"].contains(command) then exit
 
 	// Handle built-in commands
 	if BuiltIns.hasIndex(command) then

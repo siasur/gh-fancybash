@@ -1,3 +1,23 @@
+import_code("./utils.src")
 import_code("./libs/keyValueStorage.src")
 
 Config = KeyValueStorage.Create()
+
+Config.ExpandVariables = function(stringList)
+
+    if stringList == null then return
+    if stringList.len == 0 then return
+
+    if typeof(stringList) == "string" then
+        stringList = [stringList]
+    end if
+
+    for i in range(0, stringList.len - 1)
+        str = stringList[i]
+        if str.startsWith("$") then
+            varName = str[1:]
+            varValue = self.get(varName, "")
+            stringList[i] = varValue
+        end if
+    end for
+end function
