@@ -5,26 +5,33 @@ import_code("./prompt.src")
 import_code("./builtins.src")
 
 Bash = function()
-	output = user_input(Prompt, false, false, true)
-	if(output.len == 0) then return
-	
-	listCmd = output.trim.split(" ")
-	command = listCmd.pull()
+	input = user_input(Prompt, false, false, true)
+	if(input.len == 0) then return
+	output = ""
+	commandChain = input.trim().split(";")
+	if commandChain.len == 0 then return
+	for i in range(0, commandChain.len - 1)
+		output = commandChain[i]
 
-	Config.ExpandVariables(listCmd)
+		listCmd = output.trim.split(" ")
+		command = listCmd.pull()
+		
+		// Expand environment variables in the command arguments
+		Config.ExpandVariables(listCmd)
 
-	shellArgs = listCmd.join(" ")
+		shellArgs = listCmd.join(" ")
 
-	// Explicitly handle exit commands
-	if ["quit", "exit", "q", "close"].contains(command) then exit
+		// Explicitly handle exit commands
+		if ["quit", "exit", "q", "close"].contains(command) then exit
 
-	// Handle built-in commands
-	if BuiltIns.hasIndex(command) then
-	    BuiltIns[command](shellArgs)
-	else
-		// Execute external command
-	    cmdPath = PathTools.Resolve(command)
-	    output = get_shell.launch(cmdPath, shellArgs)
-	    if output and output != 1 then print(output)
-	end if
+		// Handle built-in commands
+		if BuiltIns.hasIndex(command) then
+		    BuiltIns[command](shellArgs)
+		else
+			// Execute external command
+		    cmdPath = PathTools.Resolve(command)
+		    output = get_shell.launch(cmdPath, shellArgs)
+		    if output and output != 1 then print(output)
+		end if
+	end for
 end function
