@@ -1,7 +1,9 @@
 PathTools = {}
 PathTools.searchPaths = []
-PathTools.fallbackPaths = [".", "/bin", "/usr/bin"]
+PathTools._fallbackPaths = [".", "/bin", "/usr/bin"]
 
+// Set the search paths for resolving commands
+// @param {string} paths - A semicolon-separated string of paths.
 PathTools.SetSearchPaths = function(paths)
     PathTools.searchPaths = [] // clear existing paths
     pathsParts = paths.split(";")
@@ -23,12 +25,16 @@ PathTools.SetSearchPaths = function(paths)
     end for
 
     if PathTools.searchPaths.len == 0 then // Fallback to prevent breakage
-        PathTools.searchPaths = PathTools.fallbackPaths
+        PathTools.searchPaths = PathTools._fallbackPaths
     end if
 
 end function
 
-PathTools.Resolve = function(fileName)
+// Resolve the absolute path of a file by searching through the defined search paths
+// @param {string} fileName - The name of the file to resolve.
+// @param {bool|null} includeFolders - Whether to consider folders as valid results.
+// @returns {string} - The resolved absolute path, or the original fileName if not found.
+PathTools.Resolve = function(fileName, includeFolders = false)
     for path in PathTools.searchPaths
         testPath = path
         if testPath.indexOf("~") == 0 then testPath = home_dir + testPath[1:]
@@ -37,12 +43,15 @@ PathTools.Resolve = function(fileName)
 
         absPath = get_abs_path(fileName, testPath)
         fileObj = get_shell.host_computer.File(absPath)
-        if fileObj != null then return absPath
+        if fileObj != null and (includeFolders or not fileObj.is_folder) then return absPath
     end for
 
     return fileName // Return original if not found
 end function
 
+// Beautify a file path by replacing the home directory with "~"
+// @param {string} filePath - The file path to beautify.
+// @returns {string} - The beautified file path.
 PathTools.Beautify = function(filePath)
     absPath = get_abs_path(filePath)
     if absPath.indexOf(home_dir) == 0 then

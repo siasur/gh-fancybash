@@ -26,6 +26,7 @@ KeyValueStorage.readFromFile = function(filePath)
         return "No read permission for file: " + filePath
     end if
 
+    self.filePath = filePath
     self._rawData = {} // Clear existing data
     content = fileObj.get_content().split(char(10)) // Split by newline
 
@@ -63,8 +64,19 @@ KeyValueStorage.get = function(key, defaultValue = null, putWhenMissing = false)
     end if
 end function
 
+// Sets a value by key.
+// @param {string} key - The key to set.
+// @param {string} value - The value to set.
 KeyValueStorage.set = function(key, value) // Set value by key
     self._rawData[key] = value
+end function
+
+// Unsets (removes) a key/value pair by key.
+// @param {string} key - The key to remove.
+KeyValueStorage.unset = function(key) // Unset value by key
+    if self._rawData.hasIndex(key) then
+        self._rawData.remove(key)
+    end if
 end function
 
 // Saves the current key/value data to a file.

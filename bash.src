@@ -10,8 +10,12 @@ Bash = function()
 	output = ""
 	commandChain = input.trim().split(";")
 	if commandChain.len == 0 then return
+
 	for i in range(0, commandChain.len - 1)
 		output = commandChain[i]
+
+		// We skip empty commands
+		if output.len == 0 then continue
 
 		listCmd = output.trim.split(" ")
 		command = listCmd.pull()
