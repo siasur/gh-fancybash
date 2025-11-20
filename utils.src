@@ -15,6 +15,19 @@ list.pushMany = function(items)
     end for
 end function
 
+// Filter the list based on a provided function
+// @param {function} filterFunc The function to determine if an item should be included
+// @returns {list} A new list containing only the items that pass the filter
+list.where = function(filterFunc)
+    result = []
+    for item in self
+        if filterFunc(item) then
+            result.push(item)
+        end if
+    end for
+    return result
+end function
+
 // Check if the string starts with the specified prefix
 // @param {string} prefix The prefix to check
 // @return {bool} true if the string starts with the prefix, false otherwise

@@ -100,7 +100,7 @@ end function
 // Lists all built-in commands
 BuiltIns.help = function(argString = "")
     self._print("Built-in commands:")
-    for cmd in BuiltIns.indexes //.where(@self._filterInternals)
+    for cmd in BuiltIns.indexes.where(@self._filterInternals)
         self._print(" - " + cmd)
     end for
 end function
