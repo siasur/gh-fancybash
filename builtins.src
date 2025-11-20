@@ -4,6 +4,18 @@ import_code("./config.src")
 
 BuiltIns = {}
 
+BuiltIns._print = function(text = "")
+if get_custom_object.hasIndex("__FANCYBASH_REDIRECT_STDOUT") then
+    get_custom_object["__FANCYBASH_SCRIPT_OUTPUT"].push(text)
+else
+    print(text)
+end if
+end function
+
+BuiltIns._filterInternals = function(key)
+    return not key.startsWith("_")
+end function
+
 // Clears the terminal screen
 BuiltIns.clear = function(argString = "")
     clear_screen()
@@ -11,26 +23,26 @@ end function
 
 // Shows the current working directory absolute and without beautification
 BuiltIns.pwd = function(argString = "")
-    print(current_path)
+    self._print(current_path)
 end function
 
 // Echoes the provided arguments back to the terminal
 BuiltIns.echo = function(argString = "")
-    print(argString)
+    self._print(argString)
 end function
 
 // Displays whether a command is built-in or external
 BuiltIns.type = function(argString = "")
     cmd = argString.trim().split(" ")[0]
     if BuiltIns.hasIndex(cmd) then
-        print(cmd + " is a built-in command.")
+        self._print(cmd + " is a built-in command.")
     else
         cmdPath = PathTools.Resolve(cmd)
         fileObj = get_shell.host_computer.File(cmdPath)
         if fileObj != null and not fileObj.is_folder then
-            print(cmd + " is an external command.")
+            self._print(cmd + " is an external command.")
         else
-            print(cmd + " not found.")
+            self._print(cmd + " not found.")
         end if
     end if
 end function
@@ -39,23 +51,23 @@ end function
 BuiltIns.which = function(argString = "")
 
     if argString.len == 0 then
-        print("Usage: which <command>")
+        self._print("Usage: which <command>")
         return
     end if
     
         cmd = argString.trim().split(" ")[0]
 
     if BuiltIns.hasIndex(cmd) then
-        print(cmd + " is a built-in command.")
+        self._print(cmd + " is a built-in command.")
         return
     end if
 
     cmdPath = PathTools.Resolve(cmd)
     fileObj = get_shell.host_computer.File(cmdPath)
     if fileObj != null and not fileObj.is_folder then
-        print(cmdPath)
+        self._print(cmdPath)
     else
-        print(cmd + " not found.")
+        self._print(cmd + " not found.")
     end if
 end function
 
@@ -63,14 +75,14 @@ BuiltIns.export = function(argString = "")
     parts = argString.trim().split("=")
 
     if parts.len != 2 then
-        print("Usage: export VARIABLE=VALUE")
+        self._print("Usage: export VARIABLE=VALUE")
         return
     end if
 
     var = parts[0].trim()
 
     if var.len == 0 then
-        print("<color=red>Error: Variable name cannot be empty.")
+        self._print("<color=red>Error: Variable name cannot be empty.")
         return
     end if
     
@@ -87,9 +99,9 @@ end function
 
 // Lists all built-in commands
 BuiltIns.help = function(argString = "")
-    print("Built-in commands:")
-    for cmd in BuiltIns.indexes
-        print(" - " + cmd)
+    self._print("Built-in commands:")
+    for cmd in BuiltIns.indexes //.where(@self._filterInternals)
+        self._print(" - " + cmd)
     end for
 end function
 

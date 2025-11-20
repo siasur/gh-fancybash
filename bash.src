@@ -49,6 +49,10 @@ Bash = function()
 
 		// Handle built-in commands
 		if BuiltIns.hasIndex(command) then
+			if captureScriptsOutput then
+				// Built-ins support piping/redirection natively, but we need to prepare the output capture
+				get_custom_object["__FANCYBASH_SCRIPT_OUTPUT"] = []
+			end if
 		    BuiltIns[command](shellArgs)
 		else
 			// Execute external command

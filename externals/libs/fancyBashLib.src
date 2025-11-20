@@ -1,7 +1,5 @@
 FancyBash = {}
 
-// TODO: Refactor to use GCOHelper when available
-
 // Checks if we are running inside a FancyBash environment
 // @returns {number} true if we are in a FancyBash environment, false otherwise
 FancyBash.isFancyBashEnvironment = function()
