@@ -1,0 +1,23 @@
+import_code("./libs/fancyBashLib.src")
+
+print("Pipe Test Script Started.")
+
+print("Received Arguments: " + params.join(" "))
+
+isFancyBash = FancyBash.isFancyBashEnvironment
+print("Is FancyBash Environment: " + isFancyBash)
+
+isInputPiped = FancyBash.isInputPiped
+print("Is Input Piped: " + isInputPiped)
+
+isOutputPiped = get_custom_object.hasIndex("__FANCYBASH_REDIRECT_STDOUT")
+print("Is Output Piped: " + isOutputPiped)
+
+previousOutput = FancyBash.getPreviousCommandOutput()
+print("Previous Command Output:")
+for line in previousOutput
+    print("  " + line)
+end for
+
+FancyBash.setReturnValue(0)
+print("Pipe Test Script Ended.")

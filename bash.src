@@ -3,27 +3,46 @@ import_code("./config.src")
 import_code("./path.src")
 import_code("./prompt.src")
 import_code("./builtins.src")
+import_code("./cmdProcessor.src")
 
 Bash = function()
 	input = user_input(Prompt, false, false, true)
-	if(input.len == 0) then return
-	output = ""
-	commandChain = input.trim().split(";")
+	// if(input.len == 0) then return
+	// //output = ""
+	// commandChain = input.trim().split(";")
+	// if commandChain.len == 0 then return
+
+	commandChain = CommandProcessor.ParseCommandLine(input)
 	if commandChain.len == 0 then return
 
-	for i in range(0, commandChain.len - 1)
-		output = commandChain[i]
+	for cmdDef in commandChain
 
-		// We skip empty commands
-		if output.len == 0 then continue
+		command = cmdDef.name
+		listCmd = cmdDef.args
 
-		listCmd = output.trim.split(" ")
-		command = listCmd.pull()
+		captureScriptsOutput = cmdDef.writePipe or cmdDef.redirectFile != null
+		provideInputFromPipe = cmdDef.readPipe
+
+		if captureScriptsOutput then
+			get_custom_object["__FANCYBASH_REDIRECT_STDOUT"] = true
+		else
+			get_custom_object.remove("__FANCYBASH_REDIRECT_STDOUT")
+		end if
+
+		if provideInputFromPipe then
+			get_custom_object["__FANCYBASH_READ_PREVIOUS_OUTPUT"] = true
+		else
+			get_custom_object.remove("__FANCYBASH_READ_PREVIOUS_OUTPUT")
+			// Clear previous output if not needed
+			get_custom_object.remove("__FANCYBASH_PREV_SCRIPT_OUTPUT")
+		end if
 		
 		// Expand environment variables in the command arguments
 		Config.ExpandVariables(listCmd)
 
+		// Reconstruct the argument string for passing to commands
 		shellArgs = listCmd.join(" ")
+		output = command + " " + shellArgs
 
 		// Explicitly handle exit commands
 		if ["quit", "exit", "q", "close"].contains(command) then exit
@@ -37,5 +56,19 @@ Bash = function()
 		    output = get_shell.launch(cmdPath, shellArgs)
 		    if output and output != 1 then print(output)
 		end if
+
+		if get_custom_object.hasIndex("__FANCYBASH_SCRIPT_OUTPUT") then
+			if cmdDef.redirectFile != null then
+				// write into file, not implemented yet
+			else
+				get_custom_object["__FANCYBASH_PREV_SCRIPT_OUTPUT"] = get_custom_object["__FANCYBASH_SCRIPT_OUTPUT"]
+				get_custom_object.remove("__FANCYBASH_SCRIPT_OUTPUT")
+			end if
+		else if captureScriptsOutput then
+			// The previous command doesn't implement FancyBash support. Piping or redirection is not possible.
+			// Let's show a warning.
+			print("<color=yellow>[FancyBash] Warning: Command `" + command + "` does not support piping or redirection.")
+		end if
 	end for
+
 end function

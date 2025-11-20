@@ -1,0 +1,328 @@
+import_code("./utils.src")
+
+// @type CommandData
+// @property {string} name The command name
+// @property {list<string>} args The command arguments
+// @property {string} raw The raw command string
+// @property {bool} writePipe Whether this command writes to a pipe
+// @property {bool} readPipe Whether this command reads from a pipe
+// @property {string|null} redirectFile The file to which output is redirected, or null if no redirection
+CommandData = {}
+CommandData.Create = function()
+    cmd = new self
+    cmd.name = ""
+    cmd.args = []
+    cmd.raw = ""
+    cmd.writePipe = false
+    cmd.readPipe = false
+    cmd.redirectFile = null
+    return cmd
+end function
+
+TokenType = {
+    "WORD": "word",
+    "SYMBOL": "symbol"
+}
+
+// @type Token
+Token = {}
+Token.Word = function(value = "")
+    tok = new self
+    tok.type = TokenType.WORD
+    tok.value = value
+    return tok
+end function
+Token.Symbol = function(value = "")
+    tok = new self
+    tok.type = TokenType.SYMBOL
+    tok.value = value
+    return tok
+end function
+
+CommandProcessor = {}
+CommandProcessor.symbols = [";", "|", ">"]
+CommandProcessor.escapeChar = "\"
+CommandProcessor.tokenizerTimeout = 3 // seconds
+
+
+/// Parses the command line input into a structured format
+// @param {string} fullInput The full command line input string
+// @return {list<CommandData>} A list of CommandData objects representing the parsed commands, or null when no commands are found
+CommandProcessor.ParseCommandLine = function(fullInput)
+
+    tokens = self.tokenize(fullInput)
+    if tokens == null or tokens.len == 0 then return []
+
+    groups = self.splitBySemicolon(tokens)
+    if groups == null or groups.len == 0 then return []
+
+    commands = []
+
+    for group in groups
+        pipeSegments = self.splitByPipe(group)
+        if pipeSegments == null or pipeSegments.len == 0 then continue
+
+        parsedCommand = self.parsePipeSegments(pipeSegments)
+        commands.pushMany(parsedCommand)
+
+    end for
+
+    return commands
+end function
+
+// Tokenizes the input string into a list of tokens
+// @param {string} input The input command line string
+// @return {list<Token>} A list of Token objects representing the tokenized input
+CommandProcessor.tokenize = function(input)
+    // walk through the input and split into tokens
+    tokens = []
+    currentToken = ""
+    i = 0
+    startTime = time
+
+    while i < input.len
+
+        if time - startTime > self.tokenizerTimeout then
+            exit("<color=red>Error: Tokenization timed out.</>")
+        end if
+
+        ch = input[i]
+
+        if ch == self.escapeChar then
+            nextCh = input[i+1]
+            currentToken = currentToken + nextCh
+            i += 2
+            continue
+        end if
+
+        if self.symbols.contains(ch) then
+            if currentToken.len > 0 then
+                tokens.push(Token.Word(currentToken))
+                currentToken = ""
+            end if
+            tokens.push(Token.Symbol(ch))
+            i = i + 1
+            continue
+        end if
+
+        if ch == " " then
+            if currentToken.len > 0 then
+                tokens.push(Token.Word(currentToken))
+                currentToken = ""
+            end if
+            i = i + 1
+            continue
+        end if
+
+        currentToken = currentToken + ch
+        i = i + 1
+
+    end while
+
+    if currentToken.len > 0 then
+        tokens.push(Token.Word(currentToken))
+    end if
+
+    return tokens
+
+end function
+
+// Splits tokens by semicolon into command groups
+// @param {list<Token>} tokens The list of tokens to split
+// @return {list<list<Token>>} A list of token lists, each representing a command group
+CommandProcessor.splitBySemicolon = function(tokens)
+    groups = []
+    currentGroup = []
+
+    for tok in tokens
+        if tok.type == TokenType.SYMBOL and tok.value == ";" then
+            if currentGroup.len > 0 then
+                groups.push(currentGroup)
+                currentGroup = []
+            end if
+        else
+            currentGroup.push(tok)
+        end if
+    end for
+
+    if currentGroup.len > 0 then
+        groups.push(currentGroup)
+    end if
+
+    return groups
+end function
+
+// Splits tokens by pipe into segments
+// @param {list<Token>} tokens The list of tokens to split
+// @return {list<list<Token>>} A list of token lists, each representing a pipe segment
+CommandProcessor.splitByPipe = function(tokens)
+    segments = []
+    currentSegment = []
+
+    for tok in tokens
+        if tok.type == TokenType.SYMBOL and tok.value == "|" then
+            if currentSegment.len > 0 then
+                segments.push(currentSegment)
+                currentSegment = []
+            end if
+        else
+            currentSegment.push(tok)
+        end if
+    end for
+
+    if currentSegment.len > 0 then
+        segments.push(currentSegment)
+    end if
+
+    return segments
+
+end function
+
+// Parses a list of tokens representing a single command
+// @param {list<list<Token>>} segments The list of token lists representing pipe segments
+// @return {list<CommandData>} A list containing a single CommandData object
+CommandProcessor.parsePipeSegments = function(segments)
+    
+    commands = []
+    index = 0
+    for seg in segments
+        cmd = CommandProcessor.parseSingleCommand(seg)
+
+        cmd.readPipe = (index > 0)
+        cmd.writePipe = (index < segments.len - 1)
+
+        commands.push(cmd)
+        index += 1
+    end for
+
+    return commands
+
+end function
+
+// Parses a single command from a list of tokens
+// @param {list<Token>} tokens The list of tokens representing the command
+// @return {CommandData} The parsed CommandData object
+CommandProcessor.parseSingleCommand = function(tokens)
+    if tokens.len == 0 then return null
+    cmdData = CommandData.Create()
+    cmdData.raw = CommandProcessor.tokensToString(tokens)
+
+    i = 0
+    while i < tokens.len
+        tok = tokens[i]
+
+        if tok.type == TokenType.SYMBOL and tok.value == ">" then
+            // Output redirection
+            if i + 1 < tokens.len and tokens[i + 1].type == TokenType.WORD then
+                cmdData.redirectFile = tokens[i + 1].value
+                i = i + 2
+                continue
+            else
+                exit("<color=red>Error: Expected filename after '>' symbol.</>")
+            end if
+        end if
+
+        if tok.type == TokenType.WORD then
+            if cmdData.name == "" then
+                cmdData.name = tok.value
+            else
+                cmdData.args.push(tok.value)    
+            end if
+        end if
+
+        i += 1
+    end while
+
+    return cmdData
+
+end function
+
+// Converts a list of tokens back into a string
+// @param {list<Token>} tokens The list of tokens to convert
+// @return {string} The concatenated string representation of the tokens
+CommandProcessor.tokensToString = function(tokens)
+    str = ""
+    for tok in tokens
+        str = str + tok.value + " "
+    end for
+    return str.trim
+end function
+
+
+/* Bad stuff below, I just don't want to lose this yet, while building the proper parser above */
+
+/*
+
+// Parses the full input command string into CommandData objects
+// @return {list<{CommandData}>|null} List of CommandData objects representing each command in the input, or null on syntax error
+CommandProcessor.Parse = function(fullInput)
+
+    // example input: "cmd1 arg1 arg2 | cmd2 arg2_1 arg2_2 > output.txt"
+    // example input: "cmd1 arg1 ; cmd2 arg2"
+    // example input: "cmd1 arg1 > output.txt ; cmd2 arg2 | cmd3 arg3"
+    // example input: "cmd1 arg1 | cmd2 arg2 | cmd3"
+    // While ; can be directly adjacent to other commands, | and > need to be separated by spaces
+
+    // Split by ; to get individual commands
+    rawCommands = fullInput.trim.split(";")
+
+    commands = []
+
+    for rawCmd in rawCommands
+
+        rawCmd = rawCmd.trim()
+        if rawCmd.len == 0 then continue
+
+        // For now, we do not prevent invalid inputs, simply do as told:
+        // command comes before a pipe -> write pipe
+        // command comes after a pipe -> read pipe
+        // command comes before a redirect -> redirect to file
+        // command comes after a redirect -> error (for now)
+
+        readFromPipe = false
+        writeToPipe = false
+        currentOffset = 0
+
+        while currentOffset < rawCmd.len
+            // look ahead for " | " and " > "
+            pipeIndex = rawCmd.indexOf(" | ", currentOffset)
+            redirectIndex = rawCmd.indexOf(" > ", currentOffset)
+            nextIndex = Math.min(pipeIndex, redirectIndex)
+
+            subCmd = rawCmd[currentOffset : nextIndex]
+
+            // if nextIndex == -1 then
+            //     // No more pipes or redirects, process the rest as a command
+            //     cmdParts = rawCmd.trim.split(" ")
+            //     cmdName = cmdParts.pull()
+            //     cmdArgs = cmdParts
+            //     cmdData = CommandData.Create(cmdName, cmdArgs, rawCmd)
+            //     cmdData.readPipe = readFromPipe
+            //     cmdData.writePipe = writeToPipe
+            //     rawCmd = "" // Clear to exit loop
+            //     commands.push(cmdData)
+            // else if nextIndex == pipeIndex then
+            //     cmdSegment
+            // else if nextIndex == redirectIndex then
+            //     // We found a redirect next
+            // else 
+            //     // WHAT???
+            // end if
+            
+        end while
+
+    end for
+
+    // Ensure that the last redirection is after the last pipe
+
+    // Split by | to handle piping (internally also treated as redirection)
+    // The following command needs to read from the previous command's output
+
+    // Split by > to handle output redirection
+end function
+
+CommandProcessor.extractRawCommands = function(fullInput)
+    return fullInput.trim.split(";")
+end function
+
+*/

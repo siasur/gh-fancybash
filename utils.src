@@ -1,10 +1,18 @@
-// List utility functions
-
 // Check if a list contains a specific element
 // @param {string} needle The element to search for
 // @return {bool} true if the element is found, false otherwise
 list.contains = function(needle)
     return self.indexOf(needle) != null 
+end function
+
+// Push multiple items into the list
+// @param {list} items The items to push into the list
+list.pushMany = function(items)
+    if self == items then return // Prevent pushing self into self
+
+    for item in items
+        self.push(item)
+    end for
 end function
 
 // Check if the string starts with the specified prefix
@@ -27,5 +35,22 @@ number.toBoolString = function()
         return "true"
     else
         return "false"
+    end if
+end function
+
+Math = {}
+Math.min = function(a, b)
+    if a < b then
+        return a
+    else
+        return b
+    end if
+end function
+
+Math.max = function(a, b)
+    if a > b then
+        return a
+    else
+        return b
     end if
 end function

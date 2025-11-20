@@ -1,0 +1,54 @@
+FancyBash = {}
+
+// TODO: Refactor to use GCOHelper when available
+
+// Checks if we are running inside a FancyBash environment
+// @returns {number} true if we are in a FancyBash environment, false otherwise
+FancyBash.isFancyBashEnvironment = function()
+    return get_custom_object.hasIndex("__FANCYBASH_FLAG")
+end function
+
+// Checks if the current execution is a redirection target
+// @description This indicates that this script should read its input from the previous command's output
+// via `FancyBash.getPreviousCommandOutput()`
+// @returns {number} true if the current execution is a redirection target, false otherwise
+FancyBash.isInputPiped = function()
+    return get_custom_object.hasIndex("__FANCYBASH_READ_PREVIOUS_OUTPUT")
+end function
+
+// Retrieves the output of the previous command/script execution
+// @returns {list} a list of strings representing the output lines of the previous command/script
+FancyBash.getPreviousCommandOutput = function()
+    if get_custom_object.hasIndex("__FANCYBASH_PREV_SCRIPT_OUTPUT") then
+        return get_custom_object["__FANCYBASH_PREV_SCRIPT_OUTPUT"]
+    else
+        return []
+    end if
+end function
+
+// Sets the return value of the current script execution
+// @param {number} value The return value to set
+FancyBash.setReturnValue = function(value)
+    if (typeof(value) != "number") then
+        get_custom_object["__FANCYBASH_SCRIPT_RETURN_VALUE"] = -1
+        get_custom_object["__FANCYBASH_SCRIPT_ERROR_MESSAGE"] = "[FancyBashLib] Error: setReturnValue expects a number as argument."
+        get_custom_object["__FANCYBASH_HALT_EXECUTION"] = true
+        exit("<color=red>[FancyBashLib] Error: setReturnValue expects a number as argument.")
+    end if
+
+    get_custom_object["__FANCYBASH_SCRIPT_RETURN_VALUE"] = value
+end function
+
+if FancyBash.isFancyBashEnvironment then
+
+    // If we are in a FancyBash environment, we hijack the print function to capture script output for later retrieval
+
+    if get_custom_object.hasIndex("__FANCYBASH_REDIRECT_STDOUT") then
+        FancyBash.original_print = @print
+        get_custom_object["__FANCYBASH_SCRIPT_OUTPUT"] = []
+        print = function(text = "")
+            get_custom_object["__FANCYBASH_SCRIPT_OUTPUT"].push(text)
+        end function
+    end if
+
+end if
