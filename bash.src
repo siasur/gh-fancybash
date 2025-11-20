@@ -63,7 +63,47 @@ Bash = function()
 
 		if get_custom_object.hasIndex("__FANCYBASH_SCRIPT_OUTPUT") then
 			if cmdDef.redirectFile != null then
-				// write into file, not implemented yet
+				absPath = get_abs_path(cmdDef.redirectFile) // Do not resolve via PATH, just expand from current dir
+
+
+				fileObj = get_shell.host_computer.File(absPath)
+				// print("fileObj on first try: " + fileObj + "("+ typeof(fileObj) +")")
+				if not fileObj then
+					// print("No file object for path: " + absPath + ". Trying to create the file.")
+					dirPath = absPath[:absPath.lastIndexOf("/")]
+					// print("dirPath: " + dirPath)
+					dirObj = get_shell.host_computer.File(dirPath)
+					// print("dirObj: " + dirObj + "("+ typeof(dirObj) +")")
+					// if dirObj then
+					// 	print("  is_folder: " + dirObj.is_folder)
+					// 	print("  has_permission(w): " + dirObj.has_permission("w"))
+					// end if
+
+					if dirObj and dirObj.is_folder and dirObj.has_permission("w") then
+						// print("touching file at: " + absPath)
+						get_shell.host_computer.touch(dirPath, absPath[absPath.lastIndexOf("/")+1:])
+						// print("re-checking fileObj...")
+						fileObj = get_shell.host_computer.File(absPath)
+					end if
+				end if
+
+				// print("fileObj: " + fileObj)
+				// 	if fileObj then
+				// 		print("  is_folder: " + fileObj.is_folder)
+				// 		print("  is_binary: " + fileObj.is_binary)
+				// 		print("  has_permission(w): " + fileObj.has_permission("w"))
+				// 	end if
+
+				if fileObj and not fileObj.is_folder and not fileObj.is_binary and fileObj.has_permission("w") then
+					// Write output to the file
+					fileObj.set_content(get_custom_object["__FANCYBASH_SCRIPT_OUTPUT"].join(char(10)))
+				else
+					print("<color=red>[FancyBash] Error: Cannot write to file `" + absPath + "`.")
+				end if
+
+				// Clear script output after saving to file
+				get_custom_object.remove("__FANCYBASH_SCRIPT_OUTPUT")
+				get_custom_object.remove("__FANCYBASH_PREV_SCRIPT_OUTPUT")
 			else
 				get_custom_object["__FANCYBASH_PREV_SCRIPT_OUTPUT"] = get_custom_object["__FANCYBASH_SCRIPT_OUTPUT"]
 				get_custom_object.remove("__FANCYBASH_SCRIPT_OUTPUT")

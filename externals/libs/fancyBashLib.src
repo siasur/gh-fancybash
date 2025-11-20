@@ -25,6 +25,7 @@ FancyBash.getPreviousCommandOutput = function()
 end function
 
 // Sets the return value of the current script execution
+// @description Unused at the moment, is planned for conditionals and error handling
 // @param {number} value The return value to set
 FancyBash.setReturnValue = function(value)
     if (typeof(value) != "number") then
