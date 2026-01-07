@@ -1,0 +1,76 @@
+import_code("./utils.src")
+
+// @type Gco
+// @description Global Custom Object Accessor API
+Gco = {}
+
+Gco.Constants = {}
+
+Gco.Constants.REDIRECT_STDOUT = "__FANCYBASH_REDIRECT_STDOUT"
+Gco.Constants.READ_PREVIOUS_OUTPUT = "__FANCYBASH_READ_PREVIOUS_OUTPUT"
+Gco.Constants.PREV_SCRIPT_OUTPUT = "__FANCYBASH_PREV_SCRIPT_OUTPUT"
+Gco.Constants.SCRIPT_OUTPUT = "__FANCYBASH_SCRIPT_OUTPUT"
+Gco.Constants.SCRIPT_RETURN_VALUE = "__FANCYBASH_SCRIPT_RETURN_VALUE"
+Gco.Constants.SCRIPT_ERROR_MESSAGE = "__FANCYBASH_SCRIPT_ERROR_MESSAGE"
+Gco.Constants.HALT_EXECUTION = "__FANCYBASH_HALT_EXECUTION"
+
+// Predicate function to identify non-internal keys
+Gco._nonInternal = function(key, value)
+	return not key.startsWith("__FANCYBASH")
+end function
+
+// Clears all non-internal entries from the global custom object
+Gco.clear = function
+	get_custom_object.removeByPredicate(@Gco._nonInternal)
+    get_custom_object.remove(Gco.Constants.HALT_EXECUTION)
+end function
+
+// Sets whether to redirect standard output to capture script output
+// @param {bool} enabled true to enable redirection, false to disable
+Gco.setRedirectOutput = function(enabled)
+	if enabled then
+		get_custom_object[Gco.Constants.REDIRECT_STDOUT] = true
+	else
+		get_custom_object.remove(Gco.Constants.REDIRECT_STDOUT)
+	end if
+end function
+
+// Sets whether to provide input from the previous command's output
+// @param {bool} enabled true to enable input from previous output, false to disable
+Gco.setProvideInput = function(enabled)
+	if enabled then
+		get_custom_object[Gco.Constants.READ_PREVIOUS_OUTPUT] = true
+	else
+		get_custom_object.remove(Gco.Constants.READ_PREVIOUS_OUTPUT)
+		// Clear previous output if not needed
+		get_custom_object.remove(Gco.Constants.PREV_SCRIPT_OUTPUT)
+	end if
+end function
+
+// Checks if the execution should be halted
+// @returns {bool} true if execution is halted, false otherwise
+Gco.isExecutionHalted = function()
+    return get_custom_object.hasIndex(Gco.Constants.HALT_EXECUTION)
+end function
+
+// Gets the return value of the last executed script
+// @returns {number} The return value
+Gco.getReturnValue = function()
+	if get_custom_object.hasIndex(Gco.Constants.SCRIPT_RETURN_VALUE) then
+		return get_custom_object[Gco.Constants.SCRIPT_RETURN_VALUE]
+	else
+		// If not explicitly set, we assume success
+		// A script not crashing and not setting a return value is either
+		// - implicitly successful or
+		// - doesn't explicitly support FancyBash
+		return 0
+	end if
+end function
+
+Gco.getErrorMessage = function()
+	if get_custom_object.hasIndex(Gco.Constants.SCRIPT_ERROR_MESSAGE) then
+		return get_custom_object[Gco.Constants.SCRIPT_ERROR_MESSAGE]
+	else
+		return ""
+	end if
+end function

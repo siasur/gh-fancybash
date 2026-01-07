@@ -1,5 +1,15 @@
 import_code("./libs/fancyBashLib.src")
 
+randomString = function(length=8)
+    chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    result = ""
+    for i in range(length)
+        idx = floor(rnd() * chars.len)
+        result = result + chars[idx]
+    end for
+    return result
+end function
+
 print("Pipe Test Script Started.")
 
 print("Received Arguments: " + params.join(" "))
@@ -13,11 +23,32 @@ print("Is Input Piped: " + isInputPiped)
 isOutputPiped = get_custom_object.hasIndex("__FANCYBASH_REDIRECT_STDOUT")
 print("Is Output Piped: " + isOutputPiped)
 
+print("Found these (non internal) keys in GCO:")
+for keyValue in get_custom_object
+    if keyValue.key.indexOf("__FANCYBASH") != 0 then
+        print("  " + keyValue.key + ": " + keyValue.value)
+    end if
+end for
+
+print("Writing random key:value into GCO:")
+randomKey = randomString()
+randomValue = randomString(16)
+get_custom_object[randomKey] = randomValue
+print("  Key: " + randomKey)
+print("  Value: " + randomValue)
+
 previousOutput = FancyBash.getPreviousCommandOutput()
 print("Previous Command Output:")
 for line in previousOutput
     print("  " + line)
 end for
 
-FancyBash.setReturnValue(0)
-print("Pipe Test Script Ended.")
+print("Pipe Test Script Completed.")
+key = user_input("Press number to exit with that code, or just press Enter to exit with 0: ", false, true)
+if key.len > 0 then
+    code = key.to_int
+else
+    code = 0
+end if
+
+FancyBash.exit(code, "Pipe Test Script ("+ randomKey +") Ended Successfully.")

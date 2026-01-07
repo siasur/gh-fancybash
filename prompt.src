@@ -1,6 +1,8 @@
 import_code("./config.src")
 import_code("./path.src")
 
+// Function that generates the command prompt string
+// @returns {string} The formatted prompt string
 Prompt = function()
     isRoot = active_user == "root"
     currentDateTime = current_date

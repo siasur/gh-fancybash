@@ -28,6 +28,29 @@ list.where = function(filterFunc)
     return result
 end function
 
+// Remove items from the map based on a predicate function
+// @param {function} predicateFunc The function that determines if a key-value pair should be removed
+// @returns {number} The number of items removed
+map.removeByPredicate = function(predicateFunc)
+    keysToRemove = []
+    count = 0
+    // First, collect keys to remove to avoid modifying the map while iterating
+    for key in self.indexes
+        value = self[key]
+        if predicateFunc(key, value) then
+            keysToRemove.push(key)
+        end if
+    end for
+
+    // Remove the collected keys
+    for key in keysToRemove
+        count = count + self.remove(key)
+    end for
+
+    // Return the number of items removed
+    return count
+end function
+
 // Check if the string starts with the specified prefix
 // @param {string} prefix The prefix to check
 // @return {bool} true if the string starts with the prefix, false otherwise

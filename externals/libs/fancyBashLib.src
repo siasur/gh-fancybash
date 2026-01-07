@@ -38,6 +38,23 @@ FancyBash.setReturnValue = function(value)
     get_custom_object["__FANCYBASH_SCRIPT_RETURN_VALUE"] = value
 end function
 
+// Exits the current script execution with a given return value and optional error message
+// @param {number} [returnValue=0] The return value to set
+// @param {string} [errorMessage=null] An optional error message to set
+FancyBash.exit = function(returnValue = 0, errorMessage = null)
+    FancyBash.setReturnValue(returnValue)
+
+    if errorMessage != null then
+        get_custom_object["__FANCYBASH_SCRIPT_ERROR_MESSAGE"] = errorMessage
+    end if
+
+    if returnValue != 0 then
+        get_custom_object["__FANCYBASH_HALT_EXECUTION"] = true
+    end if
+    
+    exit() // Exit the script immediately
+end function
+
 if FancyBash.isFancyBashEnvironment then
 
     // If we are in a FancyBash environment, we hijack the print function to capture script output for later retrieval
@@ -46,6 +63,7 @@ if FancyBash.isFancyBashEnvironment then
         FancyBash.original_print = @print
         get_custom_object["__FANCYBASH_SCRIPT_OUTPUT"] = []
         print = function(text = "")
+            FancyBash.original_print(text) // Still print to console
             get_custom_object["__FANCYBASH_SCRIPT_OUTPUT"].push(text)
         end function
     end if
