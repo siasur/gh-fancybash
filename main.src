@@ -4,6 +4,7 @@ import_code("./bash.src")
 
 Config.readFromFile(home_dir + "/.bashrc")
 PathTools.SetSearchPaths(Config.get("PATH", "./;~/bin;/bin;/usr/bin", true))
+Config.set("?", 0) // Last command exit code initialization
 Config.saveToFile(home_dir + "/.bashrc", true)
 
 get_custom_object["__FANCYBASH_FLAG"] = true

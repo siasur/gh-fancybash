@@ -106,6 +106,13 @@ Bash = function()
 			print("<color=yellow>[FancyBash] Warning: Command `" + command + "` does not support piping or redirection.")
 		end if
 
+		returnValue = Gco.getReturnValue()
+		Config.set("?", returnValue)
+		
+		if Config.get("FANCYBASH_DEBUG", "0") == "1" then
+			print("<color=gray>[FancyBash Debug] Command `" + command + "` returned value " + returnValue + ".")
+		end if
+
 		if Gco.isExecutionHalted then
 			print("<color=red> Command `" + command + "` finished with returnValue " + Gco.getReturnValue() + ". Halting execution.")
 			print("<color=red> Error Message provided by command: " + Gco.getErrorMessage() + ".")
