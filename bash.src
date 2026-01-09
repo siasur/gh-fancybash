@@ -5,6 +5,7 @@ import_code("./prompt.src")
 import_code("./builtins.src")
 import_code("./cmdProcessor.src")
 import_code("./gco.src")
+import_code("libs/charMap.src")
 
 Bash = function()
 	input = user_input(Prompt, false, false, true)
@@ -87,8 +88,18 @@ Bash = function()
 				// 	end if
 
 				if fileObj and not fileObj.is_folder and not fileObj.is_binary and fileObj.has_permission("w") then
+
+					content = ""
+					if cmdDef.redirectMode == ">>" then
+						// Append mode
+						existingContent = fileObj.get_content()
+						if existingContent and existingContent.len > 0 then
+							content = existingContent + CharMap.NEWLINE
+						end if
+					end if
+
 					// Write output to the file
-					fileObj.set_content(get_custom_object["__FANCYBASH_SCRIPT_OUTPUT"].join(char(10)))
+					fileObj.set_content(content + get_custom_object["__FANCYBASH_SCRIPT_OUTPUT"].join(CharMap.NEWLINE))
 				else
 					print("<color=red>[FancyBash] Error: Cannot write to file `" + absPath + "`.")
 				end if

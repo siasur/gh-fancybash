@@ -17,6 +17,7 @@ CommandData.Create = function()
     cmd.writePipe = false
     cmd.readPipe = false
     cmd.redirectFile = null
+    cmd.redirectMode = null // ">" or ">>"
     return cmd
 end function
 
@@ -131,14 +132,15 @@ CommandProcessor.parseSingleCommand = function(tokens)
     while i < tokens.len
         tok = tokens[i]
 
-        if tok.type == TokenType.SYMBOL and tok.value == ">" then
+        if tok.type == TokenType.SYMBOL and (tok.value == ">" or tok.value == ">>") then
             // Output redirection
             if i + 1 < tokens.len and tokens[i + 1].type == TokenType.WORD then
                 cmdData.redirectFile = tokens[i + 1].value
+                cmdData.redirectMode = tok.value
                 i = i + 2
                 continue
             else
-                exit("<color=red>Error: Expected filename after '>' symbol.</>")
+                print("<color=red>Error: Expected filename after '>' or '>>' symbol.</>")
             end if
         end if
 
