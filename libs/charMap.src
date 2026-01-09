@@ -1,0 +1,16 @@
+// @type CharMap
+// A mapping of common character names to their character representations
+CharMap = {
+    "SPACE": char(32),
+    "TAB": char(9),
+    "NEWLINE": char(10),
+    "CARRIAGE_RETURN": char(13),
+    "SEMICOLON": char(59),
+    "PIPE": char(124),
+    "GREATER_THAN": char(62),
+    "LESS_THAN": char(60),
+    "AMPERSAND": char(38),
+    "DOUBLE_QUOTE": char(34),
+    "SINGLE_QUOTE": char(39),
+    "BACKSLASH": char(92)
+}

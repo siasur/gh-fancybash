@@ -1,0 +1,53 @@
+import_code("./utils.src")
+import_code("libs/charMap.src")
+import_code("libs/tokenizer.src")
+
+assertEqual = function(actual, expected, message = "Assertion failed")
+    if expected != actual then
+        exit("<color=red>" + message + " Expected: " + expected + ", Actual: " + actual + "")
+    end if
+end function
+
+assertTrue = function(condition, message = "Assertion failed")
+    if not condition then
+        exit("<color=red>" + message )
+    end if
+end function
+
+
+input1 = "echo 'Hello World'; ls -l | grep ""txt"" >> output.txt # This is a comment"
+tokens = Tokenizer.tokenize(input1)
+
+expected1 = [
+    {"type": "word", "value": "echo", "flags": ["unquoted"]},
+    {"type": "word", "value": "Hello World", "flags": ["quoted_single"]},
+    {"type": "symbol", "value": ";", "flags": []},
+    {"type": "word", "value": "ls", "flags": ["unquoted"]},
+    {"type": "word", "value": "-l", "flags": ["unquoted"]},
+    {"type": "symbol", "value": "|", "flags": []},
+    {"type": "word", "value": "grep", "flags": ["unquoted"]},
+    {"type": "word", "value": "txt", "flags": ["quoted_double"]},
+    {"type": "symbol", "value": ">>", "flags": []},
+    {"type": "word", "value": "output.txt", "flags": ["unquoted"]}
+]
+
+    for i in range(0, tokens.len - 1)
+        tok = tokens[i]
+        print("Token " + i + ": Type=" + tok.type + ", Value='" + tok.value + "', Flags=" + tok.flags)
+    end for
+
+assertEqual(tokens.len, expected1.len, "Token count mismatch")
+
+for i in range(0, expected1.len - 1)
+    tok = tokens[i]
+    exp = expected1[i]
+    assertEqual(tok.type, exp.type, "Token " + i + " type mismatch ")
+    assertEqual(tok.value, exp.value, "Token " + i + " value mismatch ")
+    assertEqual(tok.flags.len, exp.flags.len, "Token " + i + " flags count mismatch ")
+    //for j in range(0, exp.flags.len - 1)
+        //assertTrue(tok.flags.contains(exp.flags[j]), "Token " + i + " flag missing " + j)
+    //end for
+    //for k in range(0, tok.flags.len - 1)
+        //assertTrue(exp.flags.contains(tok.flags[k]), "Token " + i + " unexpected flag " + k)
+    //end for
+end for

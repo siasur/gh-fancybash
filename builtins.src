@@ -121,5 +121,4 @@ end function
 
 // More ideas:
 // Already rejected: exit, cd, ls, history, set, unset, whoami, date
-    // - export (set environment variable)
     // - alias (create command aliases)

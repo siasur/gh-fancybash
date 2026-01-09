@@ -1,4 +1,5 @@
 import_code("../utils.src")
+import_code("./charMap.src")
 
 // @type TokenType
 TokenType = {
@@ -7,10 +8,11 @@ TokenType = {
     "LITERAL": "literal"
 }
 
+// @type TokenFlags
 TokenFlags = {
-    "UNQOUTED": 0,
-    "QOUTED_SINGLE": 1,
-    "QOUTED_DOUBLE": 2
+    "UNQUOTED": "unquoted",
+    "QUOTED_SINGLE": "quoted_single",
+    "QUOTED_DOUBLE": "quoted_double",
 }
 
 // @type Token
@@ -38,64 +40,183 @@ end function
 
 // @type Tokenizer
 Tokenizer = {}
-Tokenizer.symbols = [";", "|", ">"]
-Tokenizer.whitespaceChars = [" ", char(9), char(10), char(13)]
+Tokenizer.symbols = [";", "|", ">", ">>"] // comming later: "<", "&", "&&", "||"
+Tokenizer.whitespaceChars = [CharMap.SPACE, CharMap.TAB, CharMap.NEWLINE, CharMap.CARRIAGE_RETURN]
 Tokenizer.escapeChar = "\"
+Tokenizer.commentChar = "#"
 Tokenizer.tokenizerTimeout = 3 // seconds
+
+Tokenizer.Scope = {
+        "None": 0,
+        "Single": 1,
+        "Double": 2,
+        "Symbol": 3,
+        "Comment": 4,
+        "Whitespace": 5
+    }
 
 // Tokenizes the input string into a list of tokens
 // @param {string} input The input command line string
 // @return {list<Token>} A list of Token objects representing the tokenized input
 Tokenizer.tokenize = function(input)
     // walk through the input and split into tokens
-    tokens = []
-    currentToken = ""
-    i = 0
-    startTime = time
+    context = {
+        "tokens": [],
+        "currentToken": "",
+        "i": 0,
+        "startTime": time,
+        "currentScope": Tokenizer.Scope.None
+    }
 
-    while i < input.len
+    while context.i < input.len
 
-        if time - startTime > self.tokenizerTimeout then
+        if time - context.startTime > self.tokenizerTimeout then
             exit("<color=red>Error: Tokenization timed out.")
         end if
 
-        ch = input[i]
-
-        if ch == self.escapeChar then
-            nextCh = input[i+1]
-            currentToken = currentToken + nextCh
-            i += 2
-            continue
+        ch = input[context.i]
+        ch2 = null
+        if context.i + 1 < input.len then
+            ch2 = input[context.i + 1]
         end if
 
-        if self.symbols.contains(ch) then
-            if currentToken.len > 0 then
-                tokens.push(Token.Word(currentToken))
-                currentToken = ""
+        // ---------------- WHITESPACE SCOPE ----------------
+        if context.currentScope == Tokenizer.Scope.Whitespace then
+            if self.whitespaceChars.hasIndex(ch) then
+                // Still in whitespace - skip
+                context.i += 1
+                continue
+            else
+                // End of whitespace
+                context.currentToken = "" // Discard current Token if any and resume normal processing
+                context.currentScope = Tokenizer.Scope.None
             end if
-            tokens.push(Token.Symbol(ch))
-            i = i + 1
-            continue
         end if
 
-        if self.whitespaceChars.contains(ch) then  //ch == " " then
-            if currentToken.len > 0 then
-                tokens.push(Token.Word(currentToken))
-                currentToken = ""
+        // ---------------- COMMENT SCOPE ----------------
+        if context.currentScope == Tokenizer.Scope.Comment then
+            // Ignore everything until end of line
+            if ch == CharMap.NEWLINE or ch == CharMap.CARRIAGE_RETURN then
+                context.currentScope = Tokenizer.Scope.None
             end if
-            i = i + 1
+            context.i += 1
             continue
         end if
 
-        currentToken = currentToken + ch
-        i = i + 1
+        // ---------------- SINGLE QUOTE ----------------
+        if context.currentScope == Tokenizer.Scope.Single then
+            if ch == "'" then
+                self.flushWordToken(context)
+                context.currentScope = Tokenizer.Scope.None
+            else
+                context.currentToken += ch
+            end if
+            context.i += 1
+            continue
+        end if
+
+        // ---------------- DOUBLE QUOTE ----------------
+        if context.currentScope == Tokenizer.Scope.Double then
+            if ch == """" then
+                self.flushWordToken(context)
+                context.currentScope = Tokenizer.Scope.None
+            else
+                // Todo : Handle escape sequences within double quotes
+                context.currentToken += ch
+            end if
+            context.i += 1
+            continue
+        end if
+
+        // ---------------- NONE SCOPE ----------------
+            // Check for comment start
+            if ch == self.commentChar then
+                self.flushWordToken(context)
+                context.currentScope = Tokenizer.Scope.Comment
+                context.i += 1
+                continue
+            end if
+
+            // Check for single quote start
+            if ch == "'" then
+                self.flushWordToken(context)
+                context.currentScope = Tokenizer.Scope.Single
+                context.i += 1
+                continue
+            end if
+
+            // Check for double quote start
+            if ch == """" then
+                self.flushWordToken(context)
+                context.currentScope = Tokenizer.Scope.Double
+                context.i += 1
+                continue
+            end if
+
+            // Escape outside quotes
+            if ch == self.escapeChar and ch2 != null then
+                context.currentToken += ch2
+                context.i += 2
+                continue
+            end if
+
+            // ---------------- SYMBOLS ----------------
+
+            // Check for multi-char symbols first
+            if ch2 != null then
+                twoCharSymbol = ch + ch2
+                if self.symbols.contains(twoCharSymbol) then
+                    self.flushWordToken(context)
+                    symTok = Token.Symbol(twoCharSymbol)
+                    context.tokens.push(symTok)
+                    context.i += 2
+                    continue
+                end if
+            end if
+
+            // Check for single-char symbols
+            if self.symbols.contains(ch) then
+                self.flushWordToken(context)
+                symTok = Token.Symbol(ch)
+                context.tokens.push(symTok)
+                context.i += 1
+                continue
+            end if
+
+            // ---------------- WORD ----------------
+            if self.whitespaceChars.contains(ch) then
+                // Whitespace - flush current token
+                self.flushWordToken(context)
+                context.currentScope = Tokenizer.Scope.Whitespace
+                context.i += 1
+                continue
+            else
+                // Regular character - add to current token
+                context.currentToken += ch
+                context.i += 1
+                continue
+            end if
 
     end while
 
-    if currentToken.len > 0 then
-        tokens.push(Token.Word(currentToken))
+    // Flush any remaining token
+    self.flushWordToken(context)
+
+    return context.tokens
+
+end function
+
+Tokenizer.flushWordToken = function(context)
+    if context.currentToken.len > 0 then
+        tok = Token.Word(context.currentToken)
+        if context.currentScope == Tokenizer.Scope.Single then
+            tok.flags.push(TokenFlags.QUOTED_SINGLE)
+        else if context.currentScope == Tokenizer.Scope.Double then
+            tok.flags.push(TokenFlags.QUOTED_DOUBLE)
+        else
+            tok.flags.push(TokenFlags.UNQUOTED)
+        end if
+        context.tokens.push(tok)
+        context.currentToken = ""
     end if
-
-    return tokens
-
 end function
