@@ -1,0 +1,101 @@
+import_code("../utils.src")
+
+// @type TokenType
+TokenType = {
+    "WORD": "word",
+    "SYMBOL": "symbol",
+    "LITERAL": "literal"
+}
+
+TokenFlags = {
+    "UNQOUTED": 0,
+    "QOUTED_SINGLE": 1,
+    "QOUTED_DOUBLE": 2
+}
+
+// @type Token
+Token = {}
+
+// Creates a word token
+// @param {string} value The value of the token
+Token.Word = function(value = "")
+    tok = new self
+    tok.type = TokenType.WORD
+    tok.value = value
+    tok.flags = []
+    return tok
+end function
+
+// Creates a symbol token
+// @param {string} value The value of the token
+Token.Symbol = function(value = "")
+    tok = new self
+    tok.type = TokenType.SYMBOL
+    tok.value = value
+    tok.flags = []
+    return tok
+end function
+
+// @type Tokenizer
+Tokenizer = {}
+Tokenizer.symbols = [";", "|", ">"]
+Tokenizer.whitespaceChars = [" ", char(9), char(10), char(13)]
+Tokenizer.escapeChar = "\"
+Tokenizer.tokenizerTimeout = 3 // seconds
+
+// Tokenizes the input string into a list of tokens
+// @param {string} input The input command line string
+// @return {list<Token>} A list of Token objects representing the tokenized input
+Tokenizer.tokenize = function(input)
+    // walk through the input and split into tokens
+    tokens = []
+    currentToken = ""
+    i = 0
+    startTime = time
+
+    while i < input.len
+
+        if time - startTime > self.tokenizerTimeout then
+            exit("<color=red>Error: Tokenization timed out.")
+        end if
+
+        ch = input[i]
+
+        if ch == self.escapeChar then
+            nextCh = input[i+1]
+            currentToken = currentToken + nextCh
+            i += 2
+            continue
+        end if
+
+        if self.symbols.contains(ch) then
+            if currentToken.len > 0 then
+                tokens.push(Token.Word(currentToken))
+                currentToken = ""
+            end if
+            tokens.push(Token.Symbol(ch))
+            i = i + 1
+            continue
+        end if
+
+        if self.whitespaceChars.contains(ch) then  //ch == " " then
+            if currentToken.len > 0 then
+                tokens.push(Token.Word(currentToken))
+                currentToken = ""
+            end if
+            i = i + 1
+            continue
+        end if
+
+        currentToken = currentToken + ch
+        i = i + 1
+
+    end while
+
+    if currentToken.len > 0 then
+        tokens.push(Token.Word(currentToken))
+    end if
+
+    return tokens
+
+end function

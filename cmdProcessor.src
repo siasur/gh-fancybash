@@ -1,4 +1,5 @@
 import_code("./utils.src")
+import_code("libs/tokenizer.src")
 
 // @type CommandData
 // @property {string} name The command name
@@ -19,38 +20,14 @@ CommandData.Create = function()
     return cmd
 end function
 
-TokenType = {
-    "WORD": "word",
-    "SYMBOL": "symbol"
-}
-
-// @type Token
-Token = {}
-Token.Word = function(value = "")
-    tok = new self
-    tok.type = TokenType.WORD
-    tok.value = value
-    return tok
-end function
-Token.Symbol = function(value = "")
-    tok = new self
-    tok.type = TokenType.SYMBOL
-    tok.value = value
-    return tok
-end function
-
 CommandProcessor = {}
-CommandProcessor.symbols = [";", "|", ">"]
-CommandProcessor.escapeChar = "\"
-CommandProcessor.tokenizerTimeout = 3 // seconds
-
 
 /// Parses the command line input into a structured format
 // @param {string} fullInput The full command line input string
 // @return {list<CommandData>} A list of CommandData objects representing the parsed commands, or null when no commands are found
 CommandProcessor.ParseCommandLine = function(fullInput)
 
-    tokens = self.tokenize(fullInput)
+    tokens = Tokenizer.tokenize(fullInput)
     if tokens == null or tokens.len == 0 then return []
 
     groups = self.splitBySemicolon(tokens)
@@ -68,63 +45,6 @@ CommandProcessor.ParseCommandLine = function(fullInput)
     end for
 
     return commands
-end function
-
-// Tokenizes the input string into a list of tokens
-// @param {string} input The input command line string
-// @return {list<Token>} A list of Token objects representing the tokenized input
-CommandProcessor.tokenize = function(input)
-    // walk through the input and split into tokens
-    tokens = []
-    currentToken = ""
-    i = 0
-    startTime = time
-
-    while i < input.len
-
-        if time - startTime > self.tokenizerTimeout then
-            exit("<color=red>Error: Tokenization timed out.</>")
-        end if
-
-        ch = input[i]
-
-        if ch == self.escapeChar then
-            nextCh = input[i+1]
-            currentToken = currentToken + nextCh
-            i += 2
-            continue
-        end if
-
-        if self.symbols.contains(ch) then
-            if currentToken.len > 0 then
-                tokens.push(Token.Word(currentToken))
-                currentToken = ""
-            end if
-            tokens.push(Token.Symbol(ch))
-            i = i + 1
-            continue
-        end if
-
-        if ch == " " then
-            if currentToken.len > 0 then
-                tokens.push(Token.Word(currentToken))
-                currentToken = ""
-            end if
-            i = i + 1
-            continue
-        end if
-
-        currentToken = currentToken + ch
-        i = i + 1
-
-    end while
-
-    if currentToken.len > 0 then
-        tokens.push(Token.Word(currentToken))
-    end if
-
-    return tokens
-
 end function
 
 // Splits tokens by semicolon into command groups
