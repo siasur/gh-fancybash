@@ -6,7 +6,15 @@ PathTools._fallbackPaths = [".", "/bin", "/usr/bin"]
 // @param {string} paths - A semicolon-separated string of paths.
 PathTools.SetSearchPaths = function(paths)
     PathTools.searchPaths = [] // clear existing paths
-    pathsParts = paths.split(";")
+    pathsParts = paths.split(":")
+
+    if pathsParts.len == 1 then
+        // Try splitting by semicolon if no colon found
+        // This is for backwards compatibility with old configs
+        // They used semicolon as separator before deciding for POSIX parity
+        pathsParts = paths.split(";")
+    end if
+
     for p in pathsParts
         trimmedPath = p.trim()
         if trimmedPath.len > 0 then
@@ -14,7 +22,7 @@ PathTools.SetSearchPaths = function(paths)
             
             if trimmedPath.indexOf(".") == 0 and p.len == 1 then valid = true // current directory
 			if trimmedPath.indexOf("./") == 0 then valid = true // Relative to current directory
-			if trimmedPath.indexOf("~") == 0 then valid = true // Relative to home directory
+			if trimmedPath.indexOf("~/") == 0 then valid = true // Relative to home directory
 			if trimmedPath.indexOf("/") == 0 then valid = true // Absolute path
             
             if valid then
@@ -37,7 +45,7 @@ end function
 PathTools.Resolve = function(fileName, includeFolders = false)
     for path in PathTools.searchPaths
         testPath = path
-        if testPath.indexOf("~") == 0 then testPath = home_dir + testPath[1:]
+        if testPath.indexOf("~/") == 0 then testPath = home_dir + testPath[1:]
         if testPath.indexOf("./") == 0 then testPath = current_path + testPath[1:]
         if testPath == "." then testPath = current_path
 
